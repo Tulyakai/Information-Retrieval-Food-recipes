@@ -11,10 +11,9 @@ from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
 import pint
 
-
-
 def preProcess(s):
     ps = PorterStemmer()
+    s = re.sub('[^A-za-z]', ' ', s)
     s = word_tokenize(s)
     stopwords_set = set(stopwords.words())
     stop_dict = {s: 1 for s in stopwords_set}

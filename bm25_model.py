@@ -37,25 +37,9 @@ class BM25(object):
 
 if __name__ == '__main__':
     parsed_data = pickle.load(open('resources/cleaned_df.pkl', 'rb'))
-    bm25_ingred = BM25()
-    bm25_ingred.fit(parsed_data['cleaned_ingredients'])
-    pickle.dump(bm25_ingred, open('models/bm25_ingred.pkl', 'wb'))
-
     bm25_title = BM25()
     bm25_title.fit(parsed_data['title'])
-    pickle.dump(bm25_title, open('models/bm25_title.pkl', 'wb'))
 
-#test search by ingredient
-import pandas as pd
-score = bm25_ingred.transform('teriyaki')
-df_bm = pd.DataFrame({'bm25': list(score), 'title': list(parsed_data['title']), 'ingredients': list(parsed_data['ingredients']), 'instructions': list(parsed_data['instructions']), 'image_name': list(parsed_data['image_name']),}).nlargest(columns='bm25', n=10)
-df_bm['rank'] = df_bm['bm25'].rank(ascending=False)
-df_bm = df_bm.drop(columns='bm25', axis=1)
-df_bm
-
-
-score = bm25_title.transform('teriyaki')
-df_bm = pd.DataFrame({'bm25': list(score), 'title': list(parsed_data['title']), 'ingredients': list(parsed_data['ingredients']), 'instructions': list(parsed_data['instructions']), 'image_name': list(parsed_data['image_name']),}).nlargest(columns='bm25', n=10)
-df_bm['rank'] = df_bm['bm25'].rank(ascending=False)
-df_bm = df_bm.drop(columns='bm25', axis=1)
-df_bm
+    bm25_ingred = BM25()
+    bm25_ingred.fit(parsed_data['cleaned_ingredients'])
+    pickle.dump((bm25_title, bm25_ingred), open('models/bm25.pkl', 'wb'))
