@@ -31,6 +31,20 @@ spell = SpellChecker(language='en')
 spell.word_frequency.load_text_file('resources/spell_corr/clean_wiki.txt')
 
 
+@app.route('/register', methods=['POST'])
+def register():
+    body = request.get_json()
+    cur = mysql.connection.cursor()
+    try:
+        password_salt = bcrypt.hashpw(body['password'].encode('utf-8'), bcrypt.gensalt(10))
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (body['username'], password_salt.decode('utf-8')))
+        mysql.connection.commit()
+    except:
+        return jsonify({'message': 'Something went wrong!'})
+    cur.close()
+    return jsonify({'message': 'Register successfully'})
+
+
 @app.route('/search-title', methods=['POST'])
 def searchByName():
     body = request.get_json()
