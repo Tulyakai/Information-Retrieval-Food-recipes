@@ -29,13 +29,18 @@ def get_and_clean_data():
     df.columns = [i.lower() for i in df.columns]
     #list of unit
     ureg = list(pint.UnitRegistry())
+    ureg_stem = [PorterStemmer().stem(w) for w in ureg]
+    ureg+= ureg_stem
     #Ingredient
     clean_ingredient = df['cleaned_ingredients']
+    clean_ingredient = clean_ingredient.apply(lambda s: s[1:-1])
+    clean_ingredient = clean_ingredient.apply(lambda s: re.sub(r'[\(\[].*?[\)\]]', '', s.lower()))
+
     clean_ingredient = clean_ingredient.apply(lambda s: s.translate(str.maketrans('', '', string.punctuation + u'\xa0')))
     clean_ingredient = clean_ingredient.apply(lambda s: re.sub('[^A-za-z]', ' ', s.lower()))
     clean_ingredient = clean_ingredient.apply(lambda s: re.sub("\s+", " ", s.strip()))
     clean_ingredient = clean_ingredient.apply(lambda s: s.split())
-    clean_ingredient = clean_ingredient.apply(lambda s: ' '.join([w for w in s if w not in ureg]))
+    clean_ingredient = clean_ingredient.apply(lambda s: ' '.join([w for w in s if PorterStemmer().stem(w) not in ureg]))
     clean_ingredient = clean_ingredient.apply(lambda s: s.translate(str.maketrans('', '', string.punctuation + u'\xa0')))
     #Title
     clean_title = df['title']
