@@ -38,7 +38,7 @@ def searchByName():
 def searchByIngredients():
     body = request.get_json()
     query = body['query']
-    score = bm25_title.transform(query)
+    score = bm25_ingred.transform(query)
     if body['query'] is None:
         return jsonify({'error': 'The JSON body is required ingredient.'})
     df_bm = pd.DataFrame({'bm25': list(score), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name']),}).nlargest(columns='bm25', n=10)
