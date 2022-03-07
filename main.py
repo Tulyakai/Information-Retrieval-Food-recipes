@@ -30,7 +30,6 @@ bm25_title, bm25_ingred = pickle.load(open('models/bm25.pkl', 'rb'))
 spell = SpellChecker(language='en')
 spell.word_frequency.load_text_file('resources/spell_corr/clean_wiki.txt')
 
-
 @app.route('/register', methods=['POST'])
 def register():
     body = request.get_json()
@@ -41,9 +40,27 @@ def register():
         mysql.connection.commit()
     except:
         return jsonify({'message': 'Something went wrong!'})
+
     cur.close()
     return jsonify({'message': 'Register successfully'})
 
+@app.route('/auth', methods=['POST'])
+def auth():
+    body = request.get_json()
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute("SELECT * FROM users WHERE username = %s", (body['username'],))
+        response = cur.fetchall()
+        if(bcrypt.checkpw(body['password'].encode('utf-8'), bytes(response[0][2], 'utf-8'))):
+            result = {'id': response[0][0], 'username': response[0][1]}
+        else:
+            raise ValueError
+    except:
+        return jsonify({'message': 'Username or password is incorrect'})
+    cur.close()
+    token = jwt.encode({'user': response[0][1], 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
+
+    return jsonify({'user': result, 'token': token})
 
 @app.route('/search-title', methods=['POST'])
 def searchByName():
