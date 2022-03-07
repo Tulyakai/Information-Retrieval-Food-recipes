@@ -30,6 +30,19 @@ bm25_title, bm25_ingred = pickle.load(open('models/bm25.pkl', 'rb'))
 spell = SpellChecker(language='en')
 spell.word_frequency.load_text_file('resources/spell_corr/clean_wiki.txt')
 
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({'message': 'Token is missing'}), 403
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        except:
+            return jsonify({'message': 'Token is invalid'}), 403
+        return f(*args, **kwargs)
+    return decorated
+
 @app.route('/register', methods=['POST'])
 def register():
     body = request.get_json()
@@ -40,7 +53,6 @@ def register():
         mysql.connection.commit()
     except:
         return jsonify({'message': 'Something went wrong!'})
-
     cur.close()
     return jsonify({'message': 'Register successfully'})
 
@@ -59,10 +71,10 @@ def auth():
         return jsonify({'message': 'Username or password is incorrect'})
     cur.close()
     token = jwt.encode({'user': response[0][1], 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
-
     return jsonify({'user': result, 'token': token})
 
 @app.route('/search-title', methods=['POST'])
+@token_required
 def searchByName():
     body = request.get_json()
     query = body['query']
@@ -77,6 +89,7 @@ def searchByName():
 
 
 @app.route('/search-ingredients', methods=['POST'])
+@token_required
 def searchByIngredients():
     body = request.get_json()
     query = body['query']
