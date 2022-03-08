@@ -149,8 +149,11 @@ def addBookmark():
     menu_id = body['menu_id']
     cur = mysql.connection.cursor()
     try:
-        cur.execute("INSERT INTO bookmarks (user_id, menu_id) VALUES (%s, %s)", (user_id,menu_id,))
-        mysql.connection.commit()
+        if(int(menu_id) <= max(cleaned_df.index) and int(menu_id) >= min(cleaned_df.index)):
+            cur.execute("INSERT INTO bookmarks (user_id, menu_id) VALUES (%s, %s)", (user_id,menu_id,))
+            mysql.connection.commit()
+        else:
+            raise KeyError
     except:
         return jsonify({'message': 'Something went wrong!'}), 400
     cur.close()
