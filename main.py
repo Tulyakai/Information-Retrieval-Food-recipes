@@ -50,10 +50,10 @@ def createDB():
         cursor.execute("CREATE TABLE users (id INT NOT NULL AUTO_INCREMENT, username VARCHAR(45) NOT NULL, password VARCHAR(255) NOT NULL, PRIMARY KEY (`id`), UNIQUE INDEX `username_UNIQUE` (`username` ASC) VISIBLE);")
         cursor.execute("CREATE TABLE bookmarks (user_id INT NOT NULL, menu_id INT NOT NULL, INDEX id_idx (user_id ASC) VISIBLE, PRIMARY KEY (user_id, menu_id), CONSTRAINT id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE);")
     except:
-        return jsonify({'message': 'Database is already existed'})
+        return jsonify({'message': 'Database is already existed'}), 400
     mysql.connection.commit()
     cursor.close()
-    return jsonify({'message': 'Database is created successfully'})
+    return jsonify({'message': 'Database is created successfully'}), 200
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -64,9 +64,9 @@ def register():
         cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (body['username'], password_salt.decode('utf-8')))
         mysql.connection.commit()
     except:
-        return jsonify({'message': 'Something went wrong!'})
+        return jsonify({'message': 'Something went wrong!'}), 400
     cur.close()
-    return jsonify({'message': 'Register successfully'})
+    return jsonify({'message': 'Register successfully'}), 200
 
 @app.route('/auth', methods=['POST'])
 def auth():
@@ -80,10 +80,21 @@ def auth():
         else:
             raise ValueError
     except:
-        return jsonify({'message': 'Username or password is incorrect'})
+        return jsonify({'message': 'Username or password is incorrect'}), 400
     cur.close()
     token = jwt.encode({'user': response[0][1], 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
     return jsonify({'user': result, 'token': token})
+
+@app.route('/getAllMenu/<page>', methods=['GET'])
+@token_required
+def getAllMenu(page):
+    X = int(page)
+    df = pd.DataFrame({'id':list(cleaned_df.index), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name']),})
+    if X > 1:
+        return jsonify({'menus': df[(X - 1) * 10:X * 10].to_dict('records'), 'page': X}), 200
+    else:
+        return jsonify({'menus': df[:10].to_dict('records'), 'page': 1}), 200
+
 
 @app.route('/search-title', methods=['POST'])
 @token_required
@@ -92,13 +103,12 @@ def searchByName():
     query = body['query']
     score = bm25_title.transform(query)
     if body['query'] is None:
-        return jsonify({'message': 'The JSON body is required title.'})
+        return jsonify({'message': 'The JSON body is required title.'}), 400
     df_bm = pd.DataFrame({'bm25': list(score), 'id':list(cleaned_df.index), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name']),}).nlargest(columns='bm25', n=10)
     df_bm['rank'] = df_bm['bm25'].rank(ascending=False)
     df_bm = df_bm.drop(columns='bm25', axis=1)
     spell_corr = [spell.correction(w) for w in body['query'].split()]
     return jsonify({'menus': df_bm.to_dict('records',), 'candidate_query':' '.join(spell_corr)})
-
 
 @app.route('/search-ingredients', methods=['POST'])
 @token_required
@@ -107,12 +117,12 @@ def searchByIngredients():
     query = body['query']
     score = bm25_ingred.transform(query)
     if body['query'] is None:
-        return jsonify({'message': 'The JSON body is required ingredient.'})
+        return jsonify({'message': 'The JSON body is required ingredient.'}), 400
     df_bm = pd.DataFrame({'bm25': list(score), 'id':list(cleaned_df.index), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name']),}).nlargest(columns='bm25', n=10)
     df_bm['rank'] = df_bm['bm25'].rank(ascending=False)
     df_bm = df_bm.drop(columns='bm25', axis=1)
     spell_corr = [spell.correction(w) for w in body['query'].split()]
-    return jsonify({'menus': df_bm.to_dict('records'), 'candidate_query':' '.join(spell_corr)})
+    return jsonify({'menus': df_bm.to_dict('records'), 'candidate_query':' '.join(spell_corr)}), 200
 
 @app.route('/add-bookmark', methods=['POST'])
 @token_required
@@ -125,9 +135,9 @@ def addBookmark():
         cur.execute("INSERT INTO bookmarks (user_id, menu_id) VALUES (%s, %s)", (user_id,menu_id,))
         mysql.connection.commit()
     except:
-        return jsonify({'message': 'Something went wrong!'})
+        return jsonify({'message': 'Something went wrong!'}), 400
     cur.close()
-    return jsonify({'message': 'Add menu to bookmark successfully'})
+    return jsonify({'message': 'Add menu to bookmark successfully'}), 200
 
 @app.route('/remove-bookmark', methods=['POST'])
 @token_required
@@ -140,9 +150,9 @@ def removeBookmark():
         cur.execute("DELETE FROM bookmarks WHERE user_id = %s AND menu_id = %s ", (user_id,menu_id,))
         mysql.connection.commit()
     except:
-        return jsonify({'message': 'Something went wrong!'})
+        return jsonify({'message': 'Something went wrong!'}), 400
     cur.close()
-    return jsonify({'message': 'Remove menu to bookmark successfully'})
+    return jsonify({'message': 'Remove menu to bookmark successfully'}), 200
 
 @app.route('/get-bookmark', methods=['GET'])
 @token_required
@@ -155,11 +165,11 @@ def getBookmark():
         response = cur.fetchall()
         idx = [i[0] for i in list(response)]
     except:
-        return jsonify({'message': 'Something went wrong!'})
+        return jsonify({'message': 'Something went wrong!'}), 400
     cur.close()
     df = pd.DataFrame({'id':list(cleaned_df.index), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name'])})
     df = df.iloc[idx]
-    return jsonify({'menus': df.to_dict('records')})
+    return jsonify({'menus': df.to_dict('records')}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
