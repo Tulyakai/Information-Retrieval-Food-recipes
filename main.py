@@ -18,7 +18,6 @@ app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = '953481'
 app.config['MYSQL_PORT'] = 3366
-
 app.config['SECRET_KEY'] = 'Bearer'
 mysql = MySQL(app)
 
@@ -42,6 +41,21 @@ def token_required(f):
             return jsonify({'message': 'Token is invalid'}), 403
         return f(*args, **kwargs)
     return decorated
+
+@app.route('/', methods=['GET'])
+def createDB():
+    # create table
+    cursor = mysql.connection.cursor()
+    try:
+        cursor.execute("CREATE TABLE users (id INT NOT NULL AUTO_INCREMENT, username VARCHAR(45) NOT NULL, password VARCHAR(255) NOT NULL, PRIMARY KEY (`id`), UNIQUE INDEX `username_UNIQUE` (`username` ASC) VISIBLE);")
+        cursor.execute("CREATE TABLE bookmarks (user_id INT NOT NULL, menu_id INT NOT NULL, INDEX id_idx (user_id ASC) VISIBLE, CONSTRAINT id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE);")
+    except:
+        return jsonify({'message': 'Database is already existed'})
+
+    mysql.connection.commit()
+    cursor.close()
+    return jsonify({'message': 'Database is created successfully'})
+
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -81,7 +95,7 @@ def searchByName():
     score = bm25_title.transform(query)
     if body['query'] is None:
         return jsonify({'message': 'The JSON body is required title.'})
-    df_bm = pd.DataFrame({'bm25': list(score), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name']),}).nlargest(columns='bm25', n=10)
+    df_bm = pd.DataFrame({'bm25': list(score), 'id':list(cleaned_df.index), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name']),}).nlargest(columns='bm25', n=10)
     df_bm['rank'] = df_bm['bm25'].rank(ascending=False)
     df_bm = df_bm.drop(columns='bm25', axis=1)
     spell_corr = [spell.correction(w) for w in body['query'].split()]
@@ -96,7 +110,7 @@ def searchByIngredients():
     score = bm25_ingred.transform(query)
     if body['query'] is None:
         return jsonify({'message': 'The JSON body is required ingredient.'})
-    df_bm = pd.DataFrame({'bm25': list(score), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name']),}).nlargest(columns='bm25', n=10)
+    df_bm = pd.DataFrame({'bm25': list(score), 'id':list(cleaned_df.index), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name']),}).nlargest(columns='bm25', n=10)
     df_bm['rank'] = df_bm['bm25'].rank(ascending=False)
     df_bm = df_bm.drop(columns='bm25', axis=1)
     spell_corr = [spell.correction(w) for w in body['query'].split()]
