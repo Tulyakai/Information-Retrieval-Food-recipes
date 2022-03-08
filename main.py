@@ -95,6 +95,16 @@ def getAllMenu(page):
     else:
         return jsonify({'menus': df[:10].to_dict('records'), 'page': 1}), 200
 
+@app.route('/getMenu/<id>', methods=['GET'])
+@token_required
+def getMenuById(id):
+    X = int(id)
+    df = pd.DataFrame({'id':list(cleaned_df.index), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name']),})
+    df = df[df['id'] == X]
+    if(df.empty):
+        return jsonify({'message': 'Menu is not found'}), 404
+    else:
+        return jsonify({'menu': df.to_dict('records')}), 200
 
 @app.route('/search-title', methods=['POST'])
 @token_required
