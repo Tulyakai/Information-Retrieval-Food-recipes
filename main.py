@@ -48,14 +48,12 @@ def createDB():
     cursor = mysql.connection.cursor()
     try:
         cursor.execute("CREATE TABLE users (id INT NOT NULL AUTO_INCREMENT, username VARCHAR(45) NOT NULL, password VARCHAR(255) NOT NULL, PRIMARY KEY (`id`), UNIQUE INDEX `username_UNIQUE` (`username` ASC) VISIBLE);")
-        cursor.execute("CREATE TABLE bookmarks (user_id INT NOT NULL, menu_id INT NOT NULL, INDEX id_idx (user_id ASC) VISIBLE, CONSTRAINT id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE);")
+        cursor.execute("CREATE TABLE bookmarks (user_id INT NOT NULL, menu_id INT NOT NULL, INDEX id_idx (user_id ASC) VISIBLE, PRIMARY KEY (user_id, menu_id), CONSTRAINT id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE);")
     except:
         return jsonify({'message': 'Database is already existed'})
-
     mysql.connection.commit()
     cursor.close()
     return jsonify({'message': 'Database is created successfully'})
-
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -115,6 +113,22 @@ def searchByIngredients():
     df_bm = df_bm.drop(columns='bm25', axis=1)
     spell_corr = [spell.correction(w) for w in body['query'].split()]
     return jsonify({'menus': df_bm.to_dict('records'), 'candidate_query':' '.join(spell_corr)})
+
+@app.route('/add-bookmark', methods=['POST'])
+@token_required
+def addBookmark():
+    body = request.get_json()
+    user_id = body['user_id']
+    menu_id = body['menu_id']
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute("INSERT INTO bookmarks (user_id, menu_id) VALUES (%s, %s)", (user_id,menu_id,))
+        mysql.connection.commit()
+    except:
+        return jsonify({'message': 'Something went wrong!'})
+    cur.close()
+    return jsonify({'message': 'Add menu to bookmark successfully'})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
