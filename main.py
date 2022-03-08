@@ -193,5 +193,27 @@ def getBookmark():
     df = df.iloc[idx]
     return jsonify({'menus': df.to_dict('records'), 'suggestion':[]}), 200
 
+@app.route('/search-bookmark', methods=['POST'])
+@cross_origin()
+@token_required
+def searchBookmark():
+    body = request.get_json()
+    user_id = body['user_id']
+    query = body['query']
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute("SELECT menu_id FROM bookmarks WHERE user_id = %s", (user_id,))
+        response = cur.fetchall()
+        idx = [i[0] for i in list(response)]
+    except:
+        return jsonify({'message': 'Something went wrong!'}), 400
+    cur.close()
+    score = bm25_title.transform(query)
+    df_bm = pd.DataFrame({'bm25': list(score), 'id':list(cleaned_df.index), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name']),})
+    df_bm = df_bm.iloc[idx].nlargest(columns='bm25', n=5)
+    df_bm['rank'] = df_bm['bm25'].rank(ascending=False)
+    df_bm = df_bm.drop(columns='bm25', axis=1)
+    return jsonify({'menus': df_bm.to_dict('records'), 'suggestion': []}), 200
+
 if __name__ == '__main__':
     app.run(debug=True)
