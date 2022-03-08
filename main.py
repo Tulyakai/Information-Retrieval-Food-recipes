@@ -213,7 +213,8 @@ def searchBookmark():
     df_bm = df_bm.iloc[idx].nlargest(columns='bm25', n=5)
     df_bm['rank'] = df_bm['bm25'].rank(ascending=False)
     df_bm = df_bm.drop(columns='bm25', axis=1)
-    return jsonify({'menus': df_bm.to_dict('records'), 'suggestion': []}), 200
+    spell_corr = [spell.correction(w) for w in body['query'].split()]
+    return jsonify({'menus': df_bm.to_dict('records'), 'candidate_query':' '.join(spell_corr)}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
