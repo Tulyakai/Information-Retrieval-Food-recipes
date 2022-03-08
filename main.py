@@ -129,6 +129,22 @@ def addBookmark():
     cur.close()
     return jsonify({'message': 'Add menu to bookmark successfully'})
 
+@app.route('/remove-bookmark', methods=['POST'])
+@token_required
+def removeBookmark():
+    body = request.get_json()
+    user_id = body['user_id']
+    menu_id = body['menu_id']
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute("DELETE FROM bookmarks WHERE user_id = %s AND menu_id = %s ", (user_id,menu_id,))
+        mysql.connection.commit()
+    except:
+        return jsonify({'message': 'Something went wrong!'})
+    cur.close()
+    return jsonify({'message': 'Remove menu to bookmark successfully'})
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
