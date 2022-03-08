@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import cross_origin
 import pandas as pd
 import pickle
 from spellchecker import SpellChecker
@@ -11,7 +11,6 @@ import datetime
 from functools import wraps
 
 app = Flask(__name__)
-CORS(app)
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
@@ -43,6 +42,7 @@ def token_required(f):
     return decorated
 
 @app.route('/', methods=['GET'])
+@cross_origin()
 def createDB():
     # create table
     cursor = mysql.connection.cursor()
@@ -56,6 +56,7 @@ def createDB():
     return jsonify({'message': 'Database is created successfully'}), 200
 
 @app.route('/register', methods=['POST'])
+@cross_origin()
 def register():
     body = request.get_json()
     cur = mysql.connection.cursor()
@@ -69,6 +70,7 @@ def register():
     return jsonify({'message': 'Register successfully'}), 200
 
 @app.route('/auth', methods=['POST'])
+@cross_origin()
 def auth():
     body = request.get_json()
     cur = mysql.connection.cursor()
@@ -86,6 +88,7 @@ def auth():
     return jsonify({'user': result, 'token': token})
 
 @app.route('/getAllMenu/<page>', methods=['GET'])
+@cross_origin()
 @token_required
 def getAllMenu(page):
     X = int(page)
@@ -96,6 +99,7 @@ def getAllMenu(page):
         return jsonify({'menus': df[:10].to_dict('records'), 'page': 1}), 200
 
 @app.route('/getMenu/<id>', methods=['GET'])
+@cross_origin()
 @token_required
 def getMenuById(id):
     X = int(id)
@@ -107,6 +111,7 @@ def getMenuById(id):
         return jsonify({'menu': df.to_dict('records')}), 200
 
 @app.route('/search-title', methods=['POST'])
+@cross_origin()
 @token_required
 def searchByName():
     body = request.get_json()
@@ -121,6 +126,7 @@ def searchByName():
     return jsonify({'menus': df_bm.to_dict('records',), 'candidate_query':' '.join(spell_corr)})
 
 @app.route('/search-ingredients', methods=['POST'])
+@cross_origin()
 @token_required
 def searchByIngredients():
     body = request.get_json()
@@ -135,6 +141,7 @@ def searchByIngredients():
     return jsonify({'menus': df_bm.to_dict('records'), 'candidate_query':' '.join(spell_corr)}), 200
 
 @app.route('/add-bookmark', methods=['POST'])
+@cross_origin()
 @token_required
 def addBookmark():
     body = request.get_json()
@@ -150,6 +157,7 @@ def addBookmark():
     return jsonify({'message': 'Add menu to bookmark successfully'}), 200
 
 @app.route('/remove-bookmark', methods=['POST'])
+@cross_origin()
 @token_required
 def removeBookmark():
     body = request.get_json()
@@ -165,6 +173,7 @@ def removeBookmark():
     return jsonify({'message': 'Remove menu to bookmark successfully'}), 200
 
 @app.route('/get-bookmark', methods=['GET'])
+@cross_origin()
 @token_required
 def getBookmark():
     body = request.get_json()
@@ -179,7 +188,7 @@ def getBookmark():
     cur.close()
     df = pd.DataFrame({'id':list(cleaned_df.index), 'title': list(cleaned_df['title']), 'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']), 'image_name': list(cleaned_df['image_name'])})
     df = df.iloc[idx]
-    return jsonify({'menus': df.to_dict('records')}), 200
+    return jsonify({'menus': df.to_dict('records'), 'suggestion':[]}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
