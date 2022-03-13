@@ -134,7 +134,7 @@ def get_bookmark():
     if status == 400:
         return jsonify({'message': data}), 400
     else:
-        return jsonify({'men us': data['menus'], 'suggestion':data['suggestion']}), 200
+        return jsonify({'menus': data['menus'], 'suggestion':data['suggestion']}), 200
 
 @app.route('/search-bookmark', methods=['POST'])
 @cross_origin()
@@ -148,4 +148,4 @@ def search_bookmark():
         return jsonify({'menus': data['menus'], 'candidate_query': data['candidate_query']}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)

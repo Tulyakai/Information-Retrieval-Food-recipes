@@ -63,7 +63,10 @@ def getBookmark(data, mysql):
         df_bm = df_bm.nlargest(columns='bm25', n=5)
         df_bm['rank'] = df_bm['bm25'].rank(ascending=False)
         df_bm = df_bm.drop(columns='bm25', axis=1)
-    return {'menus': df.to_dict('records'), 'suggestion': df_bm.to_dict('records')}, 200
+        return {'menus': df.to_dict('records'), 'suggestion': df_bm.to_dict('records')}, 200
+    else:
+        return {'menus': df.to_dict('records'), 'suggestion': []}, 200
+
 
 def searchBookmark(data, mysql):
     user_id = data['user_id']
