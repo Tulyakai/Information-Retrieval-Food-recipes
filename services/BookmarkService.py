@@ -44,13 +44,26 @@ def getBookmark(data, mysql):
         response = cur.fetchall()
         idx = [i[0] for i in list(response)]
     except:
-        return  'Something went wrong!', 400
+        return 'Something went wrong!', 400
     cur.close()
     df = pd.DataFrame({'id': list(cleaned_df.index), 'title': list(cleaned_df['title']),
                        'ingredients': list(cleaned_df['ingredients']), 'instructions': list(cleaned_df['instructions']),
                        'image_name': list(cleaned_df['image_name'])})
     df = df.iloc[idx]
-    return {'menus': df.to_dict('records'), 'suggestion': []}, 200
+    if len(idx):
+        recommend_list = ' '.join(list(cleaned_df.iloc[idx]['cleaned_title']))
+        score_ingred = bm25_ingred.transform(recommend_list)
+        score_title = bm25_title.transform(recommend_list)
+        recommend_score = score_ingred + score_title / 2
+        df_bm = pd.DataFrame({'bm25': list(recommend_score), 'id': list(cleaned_df.index), 'title': list(cleaned_df['title']),
+                              'ingredients': list(cleaned_df['ingredients']),
+                              'instructions': list(cleaned_df['instructions']),
+                              'image_name': list(cleaned_df['image_name']), })
+        df_bm = df_bm.drop(idx)
+        df_bm = df_bm.nlargest(columns='bm25', n=5)
+        df_bm['rank'] = df_bm['bm25'].rank(ascending=False)
+        df_bm = df_bm.drop(columns='bm25', axis=1)
+    return {'menus': df.to_dict('records'), 'suggestion': df_bm.to_dict('records')}, 200
 
 def searchBookmark(data, mysql):
     user_id = data['user_id']
@@ -63,7 +76,10 @@ def searchBookmark(data, mysql):
     except:
         return jsonify({'message': 'Something went wrong!'}), 400
     cur.close()
-    score = bm25_title.transform(query)
+
+    score_title = bm25_title.transform(query)
+    score_ingred = bm25_ingred.transform(query)
+    score = score_title + score_ingred
     df_bm = pd.DataFrame({'bm25': list(score), 'id': list(cleaned_df.index), 'title': list(cleaned_df['title']),
                           'ingredients': list(cleaned_df['ingredients']),
                           'instructions': list(cleaned_df['instructions']),

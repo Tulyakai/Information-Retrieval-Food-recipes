@@ -1,17 +1,14 @@
 from flask import Flask, request, jsonify
 from flask_cors import cross_origin
-import pandas as pd
-import pickle
 from bm25_model import BM25
 from flask_mysqldb import MySQL
-import bcrypt
 import jwt
 import datetime
 from functools import wraps
 from services.SpellCorrectionService import spell_corr
 from services.RecipeService import searchByTitle, searchByIngredients, getAllMenu, getMenuById
 from services.AuthenticationService import addUser, login
-from services.BookmarkService import addBookmark, removeBookmark ,getBookmark, searchBookmark
+from services.BookmarkService import addBookmark, removeBookmark, getBookmark, searchBookmark
 
 app = Flask(__name__)
 
@@ -128,7 +125,7 @@ def remove_bookmark():
     message, status = removeBookmark(body, mysql)
     return jsonify({'message': message}), status
 
-@app.route('/get-bookmark', methods=['GET'])
+@app.route('/get-bookmark', methods=['POST'])
 @cross_origin()
 @token_required
 def get_bookmark():
@@ -137,7 +134,7 @@ def get_bookmark():
     if status == 400:
         return jsonify({'message': data}), 400
     else:
-        return jsonify({'menus': data['menus'], 'suggestion':data['suggestion']}), 200
+        return jsonify({'men us': data['menus'], 'suggestion':data['suggestion']}), 200
 
 @app.route('/search-bookmark', methods=['POST'])
 @cross_origin()

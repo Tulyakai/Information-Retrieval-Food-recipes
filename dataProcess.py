@@ -5,14 +5,9 @@ import pandas as pd
 import string
 import re
 import pickle
-
 from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
 import pint
-from scipy.sparse import hstack
-
-from sklearn.neighbors import NearestNeighbors
-from scipy.sparse import csr_matrix
 
 def preProcess(s):
     ps = PorterStemmer()
@@ -39,11 +34,11 @@ def get_and_clean_data():
     clean_ingredient = df['cleaned_ingredients']
     clean_ingredient = clean_ingredient.apply(lambda s: s[1:-1])
     clean_ingredient = clean_ingredient.apply(lambda s: re.sub(r'[\(\[].*?[\)\]]', '', s.lower()))
-
     clean_ingredient = clean_ingredient.apply(lambda s: s.translate(str.maketrans('', '', string.punctuation + u'\xa0')))
     clean_ingredient = clean_ingredient.apply(lambda s: re.sub('[^A-za-z]', ' ', s.lower()))
     clean_ingredient = clean_ingredient.apply(lambda s: re.sub("\s+", " ", s.strip()))
     clean_ingredient = clean_ingredient.apply(lambda s: s.split())
+    clean_ingredient = clean_ingredient.apply(lambda s: [w for w in s if(len(w) > 2)])
     clean_ingredient = clean_ingredient.apply(lambda s: ' '.join([w for w in s if PorterStemmer().stem(w) not in ureg]))
     clean_ingredient = clean_ingredient.apply(lambda s: s.translate(str.maketrans('', '', string.punctuation + u'\xa0')))
     #Title
@@ -123,16 +118,6 @@ def group_wiki():
     wiki_1 += ' ' + iula
     save_text = open('resources/spell_corr/clean_wiki.txt', 'w')
     save_text.write(wiki_1)
-
-def make_recommendation(df):
-    bm25_title, bm25_ingred = pickle.load(open('models/bm25.pkl', 'rb'))
-
-    model_knn = NearestNeighbors(metric='cosine', algorithm='brute')
-    X = hstack([bm25_title.X, bm25_ingred.X])
-    model_knn.fit(X)
-    distances, indices = model_knn.kneighbors(df)
-
-    return ''
 
 if __name__ == '__main__':
     df = get_and_clean_data()
