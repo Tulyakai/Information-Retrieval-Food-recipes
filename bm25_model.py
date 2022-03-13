@@ -38,7 +38,7 @@ class BM25(object):
 if __name__ == '__main__':
     parsed_data = pickle.load(open('resources/cleaned_df.pkl', 'rb'))
     bm25_title = BM25()
-    bm25_title.fit(parsed_data['title'])
+    bm25_title.fit(parsed_data['cleaned_title'])
 
     bm25_ingred = BM25()
     bm25_ingred.fit(parsed_data['cleaned_ingredients'])
