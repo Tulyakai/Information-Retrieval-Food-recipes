@@ -1,5 +1,5 @@
 # Information-Retrieval-Food recipes + authentication system + suggestion system 
-This is a final project of 622115012 - 953481 Information Retrieval course, CAMT, CMU.
+This is a final project of 622115012 for IR part - 953481 Information Retrieval course, CAMT, CMU.
 
 ### Technology Tools
 - Python
