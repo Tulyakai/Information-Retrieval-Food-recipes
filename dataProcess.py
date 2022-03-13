@@ -5,8 +5,6 @@ import pandas as pd
 import string
 import re
 import pickle
-
-import rarfile
 from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
 import pint
@@ -27,28 +25,30 @@ def get_and_clean_data():
     #DataFrame
     df = pd.read_csv('resources/Food Ingredients and Recipe Dataset with Image Name Mapping.csv', index_col=0)
     df.columns = [i.lower() for i in df.columns]
+    df = df.dropna().reset_index(drop=True)
     #list of unit
     ureg = list(pint.UnitRegistry())
     ureg_stem = [PorterStemmer().stem(w) for w in ureg]
-    ureg+= ureg_stem
+    ureg += ureg_stem
     #Ingredient
     clean_ingredient = df['cleaned_ingredients']
     clean_ingredient = clean_ingredient.apply(lambda s: s[1:-1])
     clean_ingredient = clean_ingredient.apply(lambda s: re.sub(r'[\(\[].*?[\)\]]', '', s.lower()))
-
     clean_ingredient = clean_ingredient.apply(lambda s: s.translate(str.maketrans('', '', string.punctuation + u'\xa0')))
     clean_ingredient = clean_ingredient.apply(lambda s: re.sub('[^A-za-z]', ' ', s.lower()))
     clean_ingredient = clean_ingredient.apply(lambda s: re.sub("\s+", " ", s.strip()))
     clean_ingredient = clean_ingredient.apply(lambda s: s.split())
+    clean_ingredient = clean_ingredient.apply(lambda s: [w for w in s if(len(w) > 2)])
     clean_ingredient = clean_ingredient.apply(lambda s: ' '.join([w for w in s if PorterStemmer().stem(w) not in ureg]))
     clean_ingredient = clean_ingredient.apply(lambda s: s.translate(str.maketrans('', '', string.punctuation + u'\xa0')))
     #Title
     clean_title = df['title']
     clean_title = clean_title.apply(lambda s: str(s).lower())
-    clean_title = clean_title.apply(lambda s: s.translate(str.maketrans('', '', string.punctuation + u'\xa0')))
+    clean_title = clean_title.apply(lambda s: re.sub('[^A-za-z]', ' ', s))
     #Merge
-    df['title'] = clean_title
+    df['cleaned_title'] = clean_title
     df['cleaned_ingredients'] = clean_ingredient
+    df['image_name'] = df['image_name'].apply(lambda s: s + '.jpg')
 
     pickle.dump(df, open('resources/cleaned_df.pkl' ,'wb'))
     return df
@@ -106,7 +106,6 @@ def clean_iula():
     text = ' '.join(text)
     return text
 
-
 def group_wiki():
     wiki_1 = clean_data_wiki_100k()
     wiki_2 = clean_data_wiki_300k()
@@ -120,7 +119,6 @@ def group_wiki():
     save_text = open('resources/spell_corr/clean_wiki.txt', 'w')
     save_text.write(wiki_1)
 
-
 if __name__ == '__main__':
-    get_and_clean_data()
+    df = get_and_clean_data()
     group_wiki()
